@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="INJAZ">
+  <meta name="theme-color" content="#0f111a">
+  <title>INJAZ</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" sizes="152x152" href="./icons/apple-touch-icon-152x152.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="./icons/apple-touch-icon-167x167.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192x192.png">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bgMain: '#0f111a',
+            sidebarBg: '#131622',
+            cardBg: '#1b1f30',
+            cardHover: '#23283d',
+            borderColor: '#2a2f45',
+            accentBlue: '#6366f1',
+            accentHover: '#4f46e5',
+            successGreen: '#10b981',
+            warningOrange: '#f59e0b',
+            dangerRed: '#ef4444',
+            textMuted: '#9ca3af',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0f111a;
+      color: #ffffff;
+      overflow-x: hidden;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #131622; }
+    ::-webkit-scrollbar-thumb { background: #2a2f45; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+    .table-container table { border-collapse: separate; border-spacing: 0; }
+    .table-container th { background-color: #131622; color: #38bdf8; font-weight: 700; border-bottom: 1px solid #2a2f45; }
+    .table-container tr:hover td { background-color: #23283d; }
+    .table-container tr.selected td { background-color: #6366f1 !important; color: #ffffff !important; }
+    @media print {
+      body * { visibility: hidden; }
+      #printableReport, #printableReport * { visibility: visible; }
+      #printableReport { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; padding: 24px; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-bgMain text-white antialiased min-h-screen flex flex-col selection:bg-accentBlue selection:text-white">
+
+  <!-- LOGIN CONTAINER -->
+  <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-bgMain px-4">
+    <div class="w-[440px] max-w-full bg-cardBg border border-borderColor rounded-2xl shadow-2xl p-8 relative overflow-hidden">
+      <div class="absolute -top-24 -left-24 w-48 h-48 bg-accentBlue/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-successGreen/10 rounded-full blur-3xl"></div>
+
+      <div class="text-center mb-8 relative z-10">
+        <h1 class="text-3xl font-extrabold tracking-tight text-white mb-1">INJAZ</h1>
+        <p class="text-[10px] font-bold text-accentBlue tracking-widest uppercase">FIELD OPERATIONS &amp; INVENTORY</p>
+        <p class="text-xs text-textMuted mt-4">Please sign in to your account</p>
+      </div>
+
+      <form id="loginForm" class="space-y-4 relative z-10" onsubmit="handleLogin(event)">
+        <div>
+          <input type="text" id="loginUsername" required class="w-full bg-bgMain border border-borderColor rounded-xl h-11 px-4 text-sm text-white placeholder-textMuted focus:outline-none focus:border-accentBlue transition" placeholder="Username">
+        </div>
+        <div>
+          <input type="password" id="loginPassword" required class="w-full bg-bgMain border border-borderColor rounded-xl h-11 px-4 text-sm text-white placeholder-textMuted focus:outline-none focus:border-accentBlue transition" placeholder="Password">
+        </div>
+        <button type="submit" class="w-full bg-accentBlue hover:bg-accentHover text-white font-bold h-11 rounded-xl shadow-lg transition text-sm flex items-center justify-center gap-2">
+          <span>Sign In</span>
+        </button>
+      </form>
+
+      <div class="mt-8 text-center text-xs text-textMuted relative z-10 space-y-2">
+        <p class="text-accentBlue italic text-[11px] pt-2">Developed by Al Hawari Al Naabi</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION LAYOUT -->
+  <div id="mainApp" class="hidden min-h-screen flex flex-col md:flex-row">
+    <!-- SIDEBAR -->
+    <aside class="w-full md:w-72 bg-sidebarBg border-r border-borderColor flex flex-col justify-between shrink-0 z-30">
+      <div>
+        <div class="p-6">
+          <h2 class="font-bold text-xl text-white tracking-wide">INJAZ</h2>
+          <span class="text-[9px] font-bold text-accentBlue uppercase tracking-widest block mt-0.5">WIRELINE &amp; BASE OPS</span>
+        </div>
+
+        <div class="mx-4 mb-4 p-3 bg-cardBg border border-borderColor rounded-xl">
+          <div id="sidebarUserName" class="text-xs font-bold text-white flex items-center gap-2">
+            <span>👤</span> <span id="displayUsername">admin</span>
+          </div>
+          <div id="sidebarUserRole" class="text-[9px] font-bold text-successGreen uppercase mt-1">ACCESS: ADMIN</div>
+        </div>
+
+        <nav class="px-3 space-y-1">
+          <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition text-white bg-cardBg border border-borderColor">
+            <span class="text-sm">📦</span><span>Equipments Dashboard</span>
+          </button>
+          <button onclick="switchTab('job')" id="nav-job" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition text-textMuted hover:bg-cardHover hover:text-white">
+            <span class="text-sm">🔧</span><span>Job &amp; Well Operations</span>
+          </button>
+          <button onclick="switchTab('job_management')" id="nav-job_management" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition text-textMuted hover:bg-cardHover hover:text-white">
+            <span class="text-sm">🛠️</span><span>Job Management Console</span>
+          </button>
+          <button onclick="switchTab('return')" id="nav-return" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition text-textMuted hover:bg-cardHover hover:text-white">
+            <span class="text-sm">↩️</span><span>Return &amp; Relocate</span>
+          </button>
+          <button onclick="switchTab('logs')" id="nav-logs" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition text-textMuted hover:bg-cardHover hover:text-white">
+            <span class="text-sm">📜</span><span>Activity Audit Logs</span>
+          </button>
+
+          <div id="adminNavSection" class="pt-4 mt-4 border-t border-borderColor/60 space-y-1">
+            <p class="px-3 text-[9px] font-bold text-textMuted uppercase tracking-wider mb-2">SYSTEM ADMINISTRATION</p>
+            <button onclick="switchTab('users')" id="nav-users" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition text-textMuted hover:bg-cardHover hover:text-white">
+              <span class="text-sm">👥</span><span>User Permissions</span>
+            </button>
+            <button onclick="openManageWorkshopsModal()" class="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-bold transition text-accentBlue bg-cardBg hover:bg-cardHover border border-borderColor">
+              <span class="text-sm">🏭</span><span>Manage Locations</span>
+            </button>
+          </div>
+        </nav>
+      </div>
+
+      <div class="p-4 border-t border-borderColor/50 space-y-3">
+        <button onclick="logout()" class="w-full bg-[#3b0707] hover:bg-[#7f1d1d] text-[#fca5a5] font-bold h-9 rounded-xl text-xs transition flex items-center justify-center gap-2">
+          <span>Sign Out</span>
+        </button>
+        <p class="text-center text-[10px] text-textMuted italic">Developed by Al Hawari Al Naabi</p>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 p-6 overflow-y-auto space-y-5">
+      <div class="bg-cardBg border border-borderColor rounded-2xl p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="space-y-1">
+          <div id="statTotalItems" class="text-2xl font-bold text-white">0</div>
+          <div class="text-[10px] text-textMuted font-medium">Total Items</div>
+        </div>
+        <div class="space-y-1">
+          <div id="statAvailItems" class="text-2xl font-bold text-successGreen">0</div>
+          <div class="text-[10px] text-textMuted font-medium">Available Stock</div>
+        </div>
+        <div class="space-y-1">
+          <div id="statAssignedItems" class="text-2xl font-bold text-warningOrange">0</div>
+          <div class="text-[10px] text-textMuted font-medium">Assigned Fleet</div>
+        </div>
+        <div class="space-y-1">
+          <div id="statActiveJobs" class="text-2xl font-bold text-accentBlue">0</div>
+          <div class="text-[10px] text-textMuted font-medium">Active Jobs</div>
+        </div>
+        <div class="space-y-1 col-span-2 sm:col-span-1">
+          <div id="statSubStorages" class="text-2xl font-bold text-[#38bdf8]">0</div>
+          <div class="text-[10px] text-textMuted font-medium">Sub Storages</div>
+        </div>
+      </div>
+
+      <!-- TAB 1: EQUIPMENTS DASHBOARD -->
+      <section id="tab-inventory" class="tab-content space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <h2 class="text-2xl font-bold text-white">Equipments Dashboard</h2>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="assignSelectedInventoryItems()" class="bg-successGreen hover:bg-[#047857] text-white font-bold h-10 px-4 rounded-xl text-xs transition">✅ Assign To Me</button>
+            <button onclick="openSubStorageModalFromSelected()" class="bg-[#9a3412] hover:bg-[#c2410c] text-white font-bold h-10 px-4 rounded-xl text-xs transition">View Sub Storage</button>
+            <div id="adminInventoryControls" class="flex flex-wrap gap-2">
+              <button onclick="openAddItemModal()" class="bg-accentBlue hover:bg-accentHover text-white font-bold h-10 px-3.5 rounded-xl text-xs transition">+ Add</button>
+              <button onclick="openEditItemModal()" class="bg-accentBlue hover:bg-accentHover text-white font-bold h-10 px-3.5 rounded-xl text-xs transition">Edit</button>
+              <button onclick="deleteSelectedItem()" class="bg-[#7f1d1d] hover:bg-[#991b1b] text-white font-bold h-10 px-3.5 rounded-xl text-xs transition">Delete</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="text" id="invSearchInput" onkeyup="renderInventoryTable()" placeholder="Search asset name..." class="w-60 h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white placeholder-textMuted focus:outline-none focus:border-accentBlue">
+          <select id="invLocFilter" onchange="renderInventoryTable()" class="h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"><option value="ALL">All Locations</option></select>
+          <select id="invTypeFilter" onchange="renderInventoryTable()" class="h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+            <option value="ALL">All Types</option><option value="Fixed Asset">Fixed Asset</option><option value="Sub Storage">Sub Storage</option>
+          </select>
+          <select id="invStatusFilter" onchange="renderInventoryTable()" class="h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+            <option value="ALL">All Status</option><option value="Available">Available</option><option value="Assigned">Assigned</option><option value="In Field">In Field</option>
+          </select>
+          <button onclick="resetInventoryFilters()" class="bg-[#334155] hover:bg-[#475569] text-white font-bold h-10 px-4 rounded-xl text-xs transition">🔄 Reset</button>
+        </div>
+
+        <div class="bg-cardBg border border-borderColor rounded-2xl p-2 table-container overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-center text-xs">
+              <thead>
+                <tr>
+                  <th class="p-3 w-10"><input type="checkbox" id="selectAllInv" onchange="toggleSelectAllInv(this)" class="rounded bg-bgMain border-borderColor"></th>
+                  <th class="p-3 text-left w-80">Name</th><th class="p-3">Category</th><th class="p-3">Type</th><th class="p-3">Location</th><th class="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody" class="divide-y divide-borderColor/40"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: JOB & WELL OPERATIONS -->
+      <section id="tab-job" class="tab-content hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-white">Job &amp; Well Operations</h2>
+          <button onclick="startJobSession()" class="bg-successGreen hover:bg-[#047857] text-white font-bold h-10 px-5 rounded-xl text-xs transition">🚀 Start Job Session</button>
+        </div>
+        <div class="bg-cardBg border border-borderColor rounded-2xl p-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1"><label class="text-xs font-bold text-white block">Well Name:</label><input type="text" id="jobWellEntry" class="w-full h-10 bg-bgMain border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"></div>
+            <div class="space-y-1"><label class="text-xs font-bold text-white block">Service Type:</label><input type="text" id="jobServiceEntry" class="w-full h-10 bg-bgMain border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"></div>
+            <div class="space-y-1"><label class="text-xs font-bold text-white block">Job Date:</label><input type="date" id="jobDateEntry" class="w-full h-10 bg-bgMain border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"></div>
+            <div class="space-y-1"><label class="text-xs font-bold text-white block">Notes (Optional):</label><input type="text" id="jobNotesEntry" class="w-full h-10 bg-bgMain border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"></div>
+          </div>
+        </div>
+        <h3 class="text-sm font-bold text-white pt-2">Select Assigned Items for this Job:</h3>
+        <div class="bg-cardBg border border-borderColor rounded-2xl p-2 table-container overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-center text-xs">
+              <thead><tr><th class="p-3 w-10">Select</th><th class="p-3 text-left">Name</th><th class="p-3">Category</th><th class="p-3">Type</th><th class="p-3">Workshop</th><th class="p-3">Status</th></tr></thead>
+              <tbody id="jobInventoryTableBody" class="divide-y divide-borderColor/40"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: JOB MANAGEMENT CONSOLE -->
+      <section id="tab-job_management" class="tab-content hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-white">Job Management Console</h2>
+          <button onclick="renderActiveJobsCards()" class="bg-accentBlue hover:bg-accentHover text-white font-bold h-9 px-4 rounded-xl text-xs transition">🔄 Refresh Active Jobs</button>
+        </div>
+        <div id="activeJobsContainer" class="space-y-3"></div>
+      </section>
+
+      <!-- TAB 4: RETURN & RELOCATE -->
+      <section id="tab-return" class="tab-content hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h2 id="returnPageTitle" class="text-2xl font-bold text-white">Return &amp; Relocate Equipment</h2>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-white">Return To:</span>
+            <select id="returnWorkshopCombo" class="h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"></select>
+            <button onclick="processReturnSelectedItems()" class="bg-successGreen hover:bg-[#047857] text-white font-bold h-10 px-4 rounded-xl text-xs transition">Confirm Return ➔</button>
+          </div>
+        </div>
+        <div class="bg-cardBg border border-borderColor rounded-2xl p-2 table-container overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-center text-xs">
+              <thead><tr><th class="p-3 w-10"><input type="checkbox" id="selectAllReturn" onchange="toggleSelectAllReturn(this)"></th><th class="p-3 text-left">Name</th><th class="p-3">Category</th><th class="p-3">Type</th><th class="p-3">Current Location</th><th class="p-3">Status</th></tr></thead>
+              <tbody id="returnTableBody" class="divide-y divide-borderColor/40"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: AUDIT LOGS -->
+      <section id="tab-logs" class="tab-content hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h2 class="text-2xl font-bold text-white">Activity Audit Logs &amp; Reports</h2>
+          <div id="adminLogControls" class="flex gap-2">
+            <button onclick="deleteSelectedLog()" class="bg-dangerRed hover:bg-[#b91c1c] text-white font-bold h-9 px-3.5 rounded-xl text-xs transition">🗑️ Delete Selected Log</button>
+            <button onclick="clearAllLogs()" class="bg-[#7f1d1d] hover:bg-[#991b1b] text-white font-bold h-9 px-3.5 rounded-xl text-xs transition">⚠️ Clear All Logs</button>
+          </div>
+        </div>
+        <div><input type="text" id="logsSearchInput" onkeyup="renderLogsTable()" placeholder="Search in logs..." class="w-full sm:w-96 h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"></div>
+        <div class="bg-cardBg border border-borderColor rounded-2xl p-2 table-container overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-center text-xs font-mono">
+              <thead><tr><th class="p-3 w-10"><input type="checkbox" id="selectAllLogs" onchange="toggleSelectAllLogs(this)"></th><th class="p-3">Timestamp</th><th class="p-3">Username</th><th class="p-3 text-left">Action</th><th class="p-3">Qty</th><th class="p-3">Well</th><th class="p-3">Service</th><th class="p-3">Location</th></tr></thead>
+              <tbody id="logsTableBody" class="divide-y divide-borderColor/40"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: USERS MANAGEMENT -->
+      <section id="tab-users" class="tab-content hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-white">User Permissions &amp; Management</h2>
+          <div class="flex gap-2">
+            <button onclick="openAddUserModal()" class="bg-successGreen hover:bg-[#047857] text-white font-bold h-10 px-4 rounded-xl text-xs transition">+ Add New User</button>
+            <button onclick="deleteSelectedUser()" class="bg-dangerRed hover:bg-[#b91c1c] text-white font-bold h-10 px-4 rounded-xl text-xs transition">Delete User</button>
+          </div>
+        </div>
+        <div class="bg-cardBg border border-borderColor rounded-2xl p-2 table-container overflow-hidden max-w-2xl">
+          <table class="w-full text-center text-xs">
+            <thead><tr><th class="p-3 text-left">Username</th><th class="p-3">Role</th></tr></thead>
+            <tbody id="usersTableBody" class="divide-y divide-borderColor/40"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODALS -->
+  <div id="subStorageModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-bgMain border border-borderColor rounded-2xl w-[900px] max-w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div class="p-5 bg-sidebarBg border-b border-borderColor flex items-center justify-between">
+        <div><h3 id="subStorageModalTitle" class="text-xl font-bold text-white">Sub Storage Container</h3><p id="subStorageModalSub" class="text-xs text-textMuted mt-1"></p></div>
+        <button onclick="closeModal('subStorageModal')" class="text-textMuted hover:text-white p-2 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-6 flex-1 overflow-y-auto space-y-4">
+        <div class="flex items-center gap-2"><span class="text-xs text-textMuted">Search:</span><input type="text" id="subMatSearchInput" onkeyup="renderSubStorageContents()" placeholder="Filter items..." class="bg-cardBg border border-borderColor rounded-xl h-10 px-3 text-xs text-white w-80 focus:outline-none focus:border-accentBlue"></div>
+        <div class="bg-cardBg border border-borderColor rounded-xl overflow-hidden table-container">
+          <table class="w-full text-center text-xs">
+            <thead><tr><th class="p-3 text-left">Consumable Name</th><th class="p-3">Quantity</th></tr></thead>
+            <tbody id="subStorageContentsBody" class="divide-y divide-borderColor/40"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="p-4 bg-sidebarBg border-t border-borderColor flex items-center justify-between flex-wrap gap-2">
+        <div id="subStorageActionBtns" class="flex gap-2">
+          <button onclick="triggerMaterialWithdrawal()" class="bg-warningOrange hover:bg-[#d97706] text-white font-bold h-10 px-4 rounded-xl text-xs">Withdraw (-)</button>
+          <button onclick="triggerMaterialRefill()" class="bg-successGreen hover:bg-[#047857] text-white font-bold h-10 px-4 rounded-xl text-xs">🔄 Refill (+)</button>
+          <button onclick="openAddMaterialSubModal()" class="bg-accentBlue hover:bg-accentHover text-white font-bold h-10 px-4 rounded-xl text-xs">+ Add New</button>
+        </div>
+        <button onclick="closeModal('subStorageModal')" class="bg-[#334155] text-white font-bold h-10 px-4 rounded-xl text-xs">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addMatModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-bgMain border border-borderColor rounded-2xl w-[360px] max-w-full p-6 space-y-4">
+      <h3 class="text-base font-bold text-white text-center">Add Stock Item</h3>
+      <input type="text" id="newMatName" placeholder="Material Name" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+      <input type="number" id="newMatQty" placeholder="Initial Quantity" value="1" min="0" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+      <button onclick="saveNewMaterialToSubStorage()" class="w-full bg-successGreen hover:bg-[#047857] text-white font-bold h-10 rounded-xl text-xs">Save Item</button>
+    </div>
+  </div>
+
+  <div id="completeJobModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-bgMain border border-borderColor rounded-2xl w-[820px] max-w-full overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div class="p-6 bg-sidebarBg border-b border-borderColor flex items-center justify-between">
+        <div><h3 class="text-xl font-bold text-white">📋 Professional Summary</h3><p class="text-xs text-textMuted mt-1">Review tools and withdraw consumables.</p></div>
+        <button onclick="closeModal('completeJobModal')" class="text-textMuted hover:text-white p-2 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-6 flex-1 overflow-y-auto space-y-4">
+        <div><label class="text-xs font-bold text-white block mb-1">• Assigned Tools Used:</label><div class="bg-cardBg border border-borderColor rounded-xl p-3"><p id="compJobToolsList" class="text-xs text-accentBlue font-semibold"></p></div></div>
+        <div class="space-y-2"><label class="text-xs font-bold text-white block">1. Select Sub Storage Container (Assigned to You):</label><select id="compSubStoreSelect" onchange="loadCompSubStoreMaterials()" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"></select></div>
+        <div class="space-y-2"><label class="text-xs font-bold text-white block">2. Consumables in Container:</label><div class="bg-cardBg border border-borderColor rounded-xl p-2 table-container max-h-40 overflow-y-auto"><table class="w-full text-center text-xs"><thead><tr><th class="p-2 text-left">Material</th><th class="p-2">Qty</th></tr></thead><tbody id="compSubStoreMatBody" class="divide-y divide-borderColor/40"></tbody></table></div></div>
+        <div class="flex items-center justify-between pt-2">
+          <div class="flex items-center gap-2"><span class="text-xs font-bold text-white">Withdraw Qty:</span><input type="number" id="compWithdrawQty" value="1" min="1" class="w-24 h-[38px] bg-cardBg border border-borderColor rounded-xl text-center text-xs text-white"></div>
+          <button onclick="withdrawMaterialForJob()" class="bg-warningOrange hover:bg-[#d97706] text-white font-bold h-[38px] px-4 rounded-xl text-xs transition">Withdraw Material (-)</button>
+        </div>
+      </div>
+      <div class="p-6 bg-sidebarBg border-t border-borderColor flex gap-3">
+        <button onclick="finalizeJobCompletion(true)" class="flex-1 bg-successGreen hover:bg-[#047857] text-white font-bold h-11 rounded-xl text-xs transition">Complete &amp; Generate PDF 📄</button>
+        <button onclick="finalizeJobCompletion(false)" class="flex-1 bg-[#334155] hover:bg-[#475569] text-white font-bold h-11 rounded-xl text-xs transition">Complete Without PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="printReportModal" class="fixed inset-0 z-50 hidden bg-black/80 flex items-center justify-center p-4">
+    <div class="bg-white text-black rounded-2xl w-[700px] max-w-full p-8 max-h-[90vh] overflow-y-auto space-y-6" id="printableReport">
+      <div class="border-b-2 border-black pb-4">
+        <h1 class="text-xl font-bold uppercase tracking-wider">PROFESSIONAL JOB &amp; OPERATIONS SUMMARY</h1>
+        <p class="text-xs text-gray-600 mt-1">Report Generated Date: <span id="pdfReportDate"></span></p>
+        <p class="text-xs text-gray-600">Operator / Engineer: <span id="pdfReportUser"></span></p>
+        <p class="text-xs text-gray-500 mt-1">INJAZ - Developed by Al Hawari Al Naabi</p>
+      </div>
+      <div class="space-y-4 text-xs font-sans">
+        <div><h2 class="font-bold text-sm border-b border-gray-300 pb-1 mb-2">1. Well &amp; Service Information:</h2><p>• Well Name: <span id="pdfWellName" class="font-semibold"></span></p><p>• Service Type: <span id="pdfServiceType" class="font-semibold"></span></p><p>• Job Date: <span id="pdfJobDate" class="font-semibold"></span></p></div>
+        <div><h2 class="font-bold text-sm border-b border-gray-300 pb-1 mb-2">2. Tools &amp; Equipments Used:</h2><ul id="pdfToolsList" class="list-disc list-inside space-y-1 font-mono text-gray-800"></ul></div>
+        <div><h2 class="font-bold text-sm border-b border-gray-300 pb-1 mb-2">3. Consumed Materials:</h2><ul id="pdfMaterialsList" class="list-disc list-inside space-y-1 font-mono text-gray-800"></ul></div>
+      </div>
+      <div class="pt-6 border-t border-gray-300 flex justify-between items-center text-xs no-print">
+        <button onclick="closeModal('printReportModal')" class="bg-gray-300 hover:bg-gray-400 text-black font-bold px-4 py-2 rounded-xl">Close</button>
+        <button onclick="window.print()" class="bg-black text-white font-bold px-6 py-2 rounded-xl">Print / Save PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="itemFormModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-bgMain border border-borderColor rounded-2xl w-[400px] max-w-full p-6 space-y-4">
+      <h3 id="itemFormTitle" class="text-lg font-bold text-white text-center">Add New Equipment</h3>
+      <input type="text" id="itemFormName" placeholder="Equipment Name" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+      <input type="text" id="itemFormCat" placeholder="Category" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+      <select id="itemFormType" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+        <option value="Fixed Asset">Fixed Asset</option><option value="Sub Storage">Sub Storage</option>
+      </select>
+      <select id="itemFormLoc" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue"></select>
+      <button onclick="saveItemForm()" id="itemFormSaveBtn" class="w-full bg-successGreen hover:bg-[#047857] text-white font-bold h-10 rounded-xl text-xs">Save Equipment</button>
+    </div>
+  </div>
+
+  <div id="manageWorkshopsModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-bgMain border border-borderColor rounded-2xl w-[700px] max-w-full p-6 space-y-4 shadow-2xl">
+      <div><h3 class="text-xl font-bold text-white">Operational Locations &amp; Bases</h3><p class="text-xs text-textMuted mt-1">Manage operational bases.</p></div>
+      <div class="bg-cardBg border border-borderColor rounded-xl p-2 table-container overflow-hidden max-h-60 overflow-y-auto">
+        <table class="w-full text-center text-xs"><thead><tr><th class="p-3 text-left">Location Name</th><th class="p-3">Assets Count</th></tr></thead><tbody id="workshopsTableBody" class="divide-y divide-borderColor/40"></tbody></table>
+      </div>
+      <div class="flex gap-3">
+        <input type="text" id="newWorkshopInput" placeholder="New location name..." class="flex-1 h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+        <button onclick="addWorkshop()" class="bg-successGreen hover:bg-[#047857] text-white font-bold h-10 px-5 rounded-xl text-xs">+ Add Location</button>
+      </div>
+      <div class="flex items-center justify-between border-t border-borderColor/60 pt-4">
+        <div class="flex gap-2">
+          <button onclick="renameSelectedWorkshop()" class="bg-accentBlue hover:bg-accentHover text-white font-bold h-10 px-4 rounded-xl text-xs">✏️ Rename</button>
+          <button onclick="deleteSelectedWorkshop()" class="bg-dangerRed hover:bg-[#b91c1c] text-white font-bold h-10 px-4 rounded-xl text-xs">🗑️ Delete</button>
+        </div>
+        <button onclick="closeModal('manageWorkshopsModal')" class="bg-[#334155] text-white font-bold h-10 px-4 rounded-xl text-xs">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addUserModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-bgMain border border-borderColor rounded-2xl w-[380px] max-w-full p-6 space-y-4">
+      <h3 class="text-lg font-bold text-white text-center">Create New User Account</h3>
+      <input type="text" id="newUsername" placeholder="Username" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+      <input type="password" id="newUserPass" placeholder="Password" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+      <select id="newUserRole" class="w-full h-10 bg-cardBg border border-borderColor rounded-xl px-3 text-xs text-white focus:outline-none focus:border-accentBlue">
+        <option value="user">user</option><option value="admin">admin</option>
+      </select>
+      <button onclick="saveNewUser()" class="w-full bg-successGreen hover:bg-[#047857] text-white font-bold h-10 rounded-xl text-xs">Create User</button>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://jjrhcfewuzrrmytpjyau.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_ZxL-fSVmQlncZ2YFNVpVvg_P9TTth_h';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let workshops = [];
+    let users = [];
+    let inventory = [];
+    let kitContents = [];
+    let jobSessions = [];
+    let sessionItems = [];
+    let sessionConsumption = [];
+    let logs = [];
+
+    let currentUser = null;
+    let activeTab = 'inventory';
+    let editingItemId = null;
+    let currentSubStorageId = null;
+    let selectedWorkshopRowName = null;
+    let activeCompletingJobId = null;
+
+    async function loadDataFromSupabase() {
+      try {
+        const { data: ws } = await supabaseClient.from('workshops').select('*');
+        if (ws) workshops = ws.map(w => w.name);
+
+        const { data: usr } = await supabaseClient.from('users').select('*');
+        if (usr) users = usr.map(u => ({ id: u.id, username: u.username, passwordHash: u.password_hash, role: u.role }));
+
+        const { data: inv } = await supabaseClient.from('inventory').select('*');
+        if (inv) inventory = inv;
+
+        const { data: kit } = await supabaseClient.from('kit_contents').select('*');
+        if (kit) kitContents = kit;
+
+        const { data: jobs } = await supabaseClient.from('job_sessions').select('*');
+        if (jobs) jobSessions = jobs;
+
+        const { data: sItems } = await supabaseClient.from('session_items').select('*');
+        if (sItems) sessionItems = sItems;
+
+        const { data: sCons } = await supabaseClient.from('session_consumption').select('*');
+        if (sCons) sessionConsumption = sCons;
+
+        const { data: lg } = await supabaseClient.from('logs').select('*').order('id', { ascending: false });
+        if (lg) logs = lg;
+      } catch (err) {
+        console.error("Error loading data from Supabase:", err);
+      }
+    }
+
+    function setupRealtimeSubscriptions() {
+      supabaseClient
+        .channel('public-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+          loadDataFromSupabase().then(() => refreshAllUI());
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'kit_contents' }, () => {
+          loadDataFromSupabase().then(() => {
+            if (currentSubStorageId) renderSubStorageContents();
+            refreshAllUI();
+          });
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'job_sessions' }, () => {
+          loadDataFromSupabase().then(() => refreshAllUI());
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_items' }, () => {
+          loadDataFromSupabase().then(() => refreshAllUI());
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'session_consumption' }, () => {
+          loadDataFromSupabase().then(() => refreshAllUI());
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'logs' }, () => {
+          loadDataFromSupabase().then(() => {
+            if (activeTab === 'logs') renderLogsTable();
+          });
+        })
+        .subscribe();
+    }
+
+    async function addAuditLog(item_id, action, quantity = 1, well = "N/A", service = "N/A", jobDate = "N/A", location = "N/A") {
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const logEntry = {
+        item_id: item_id,
+        user_id: currentUser ? currentUser.id : 1,
+        username: currentUser ? currentUser.username : "admin",
+        action: action,
+        quantity: quantity,
+        well_name: well,
+        service_type: service,
+        job_date: jobDate,
+        location: location,
+        timestamp: now
+      };
+
+      const { data, error } = await supabaseClient.from('logs').insert([logEntry]).select();
+      if (!error && data) {
+        logs.unshift(data[0]);
+      } else {
+        logs.unshift({ id: Date.now(), ...logEntry });
+      }
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('loginUsername').value.trim();
+      const p = document.getElementById('loginPassword').value.trim();
+
+      const user = users.find(usr => usr.username === u && usr.passwordHash === p);
+      if (user) {
+        currentUser = user;
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+
+        setupRealtimeSubscriptions();
+
+        document.getElementById('displayUsername').textContent = currentUser.username;
+        const roleEl = document.getElementById('sidebarUserRole');
+        roleEl.textContent = `ACCESS: ${currentUser.role.toUpperCase()}`;
+        roleEl.className = currentUser.role === 'admin'
+          ? "text-[9px] font-bold text-successGreen uppercase mt-1"
+          : "text-[9px] font-bold text-warningOrange uppercase mt-1";
+
+        if (currentUser.role !== 'admin') {
+          document.getElementById('adminNavSection').classList.add('hidden');
+          document.getElementById('adminInventoryControls').classList.add('hidden');
+          document.getElementById('adminLogControls').classList.add('hidden');
+        } else {
+          document.getElementById('adminNavSection').classList.remove('hidden');
+          document.getElementById('adminInventoryControls').classList.remove('hidden');
+          document.getElementById('adminLogControls').classList.remove('hidden');
+        }
+
+        populateLocationDropdowns();
+        refreshAllUI();
+      } else {
+        alert("Invalid credentials.");
+      }
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById('mainApp').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('loginUsername').value = '';
+      document.getElementById('loginPassword').value = '';
+    }
+
+    function populateLocationDropdowns() {
+      const locSelects = ['invLocFilter', 'returnWorkshopCombo', 'itemFormLoc'];
+      locSelects.forEach(selectId => {
+        const el = document.getElementById(selectId);
+        if (!el) return;
+        const currentVal = el.value;
+        el.innerHTML = selectId === 'invLocFilter' ? '<option value="ALL">All Locations</option>' : '';
+        workshops.forEach(w => {
+          const opt = document.createElement('option');
+          opt.value = w;
+          opt.textContent = w;
+          el.appendChild(opt);
+        });
+        if (currentVal && workshops.includes(currentVal)) el.value = currentVal;
+      });
+    }
+
+    function switchTab(tabId) {
+      if (tabId === 'users' && currentUser.role !== 'admin') {
+        alert("Admin access required.");
+        return;
+      }
+
+      activeTab = tabId;
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.className = "nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition text-textMuted hover:bg-cardHover hover:text-white";
+      });
+
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`nav-${tabId}`);
+      if (activeBtn) {
+        activeBtn.className = "nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition text-white bg-cardBg border border-borderColor";
+      }
+
+      refreshAllUI();
+    }
+
+    function refreshAllUI() {
+      updateStatsBar();
+      if (activeTab === 'inventory') renderInventoryTable();
+      else if (activeTab === 'job') renderJobInventoryTable();
+      else if (activeTab === 'job_management') renderActiveJobsCards();
+      else if (activeTab === 'return') renderReturnTable();
+      else if (activeTab === 'logs') renderLogsTable();
+      else if (activeTab === 'users') renderUsersTable();
+    }
+
+    function updateStatsBar() {
+      document.getElementById('statTotalItems').textContent = inventory.length;
+      document.getElementById('statAvailItems').textContent = inventory.filter(i => i.status === 'Available').length;
+      document.getElementById('statAssignedItems').textContent = inventory.filter(i => i.status.startsWith('Assigned to')).length;
+      document.getElementById('statActiveJobs').textContent = jobSessions.filter(j => j.status === 'Active' && j.user_id === currentUser.id).length;
+      document.getElementById('statSubStorages').textContent = inventory.filter(i => i.item_type === 'Sub Storage').length;
+    }
+
+    function renderInventoryTable() {
+      const body = document.getElementById('inventoryTableBody');
+      const search = document.getElementById('invSearchInput').value.trim().toLowerCase();
+      const loc = document.getElementById('invLocFilter').value;
+      const typ = document.getElementById('invTypeFilter').value;
+      const stat = document.getElementById('invStatusFilter').value;
+
+      const filtered = inventory.filter(item => {
+        const matchesSearch = !search || item.name.toLowerCase().includes(search) || item.category.toLowerCase().includes(search);
+        const matchesLoc = loc === 'ALL' || item.location === loc;
+        const matchesType = typ === 'ALL' || item.item_type === typ;
+
+        let matchesStat = true;
+        if (stat === 'Available') matchesStat = item.status === 'Available';
+        else if (stat === 'Assigned') matchesStat = item.status.startsWith('Assigned to');
+        else if (stat === 'In Field') matchesStat = item.status.startsWith('In Field');
+
+        return matchesSearch && matchesLoc && matchesType && matchesStat;
+      });
+
+      body.innerHTML = '';
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.onclick = (e) => {
+          if (e.target.tagName !== 'INPUT') {
+            document.querySelectorAll('#inventoryTableBody tr').forEach(r => r.classList.remove('selected'));
+            tr.classList.add('selected');
+            const cb = tr.querySelector('.inv-checkbox');
+            if (cb) cb.checked = !cb.checked;
+          }
+        };
+
+        tr.innerHTML = `
+          <td class="p-3"><input type="checkbox" value="${item.id}" class="inv-checkbox rounded bg-bgMain border-borderColor"></td>
+          <td class="p-3 text-left font-bold text-white">${item.name}</td>
+          <td class="p-3 text-textMuted">${item.category}</td>
+          <td class="p-3">${item.item_type}</td>
+          <td class="p-3 text-textMuted">${item.location}</td>
+          <td class="p-3 font-semibold ${item.status === 'Available' ? 'text-successGreen' : item.status.startsWith('Assigned') ? 'text-warningOrange' : 'text-accentBlue'}">${item.status}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function toggleSelectAllInv(master) {
+      document.querySelectorAll('.inv-checkbox').forEach(cb => cb.checked = master.checked);
+    }
+
+    function resetInventoryFilters() {
+      document.getElementById('invSearchInput').value = '';
+      document.getElementById('invLocFilter').value = 'ALL';
+      document.getElementById('invTypeFilter').value = 'ALL';
+      document.getElementById('invStatusFilter').value = 'ALL';
+      renderInventoryTable();
+    }
+
+    function getSelectedInvIds() {
+      return Array.from(document.querySelectorAll('.inv-checkbox:checked')).map(cb => parseInt(cb.value));
+    }
+
+    async function assignSelectedInventoryItems() {
+      const selectedIds = getSelectedInvIds();
+      if (!selectedIds.length) { alert("Select item(s) first."); return; }
+
+      let toAssign = [];
+      selectedIds.forEach(id => {
+        const item = inventory.find(i => i.id === id);
+        if (item && item.status === 'Available') toAssign.push(item);
+      });
+
+      if (!toAssign.length) { alert("Selected items are already assigned."); return; }
+      if (!confirm(`Assign ${toAssign.length} item(s) to your profile?`)) return;
+
+      for (const item of toAssign) {
+        item.status = `Assigned to ${currentUser.username}`;
+        await supabaseClient.from('inventory').update({ status: item.status }).eq('id', item.id);
+        await addAuditLog(item.id, "Assigned to User", 1, "N/A", "N/A", "N/A", item.location);
+      }
+
+      refreshAllUI();
+      alert(`Assigned ${toAssign.length} item(s) successfully!`);
+    }
+
+    function openAddItemModal() {
+      editingItemId = null;
+      document.getElementById('itemFormTitle').textContent = "Add New Equipment";
+      document.getElementById('itemFormSaveBtn').textContent = "Save Equipment";
+      document.getElementById('itemFormName').value = '';
+      document.getElementById('itemFormCat').value = '';
+      document.getElementById('itemFormType').value = "Fixed Asset";
+      openModal('itemFormModal');
+    }
+
+    function openEditItemModal() {
+      const selected = getSelectedInvIds();
+      if (selected.length !== 1) { alert("Select item to edit."); return; }
+      editingItemId = selected[0];
+      const item = inventory.find(i => i.id === editingItemId);
+      document.getElementById('itemFormTitle').textContent = "Edit Equipment";
+      document.getElementById('itemFormSaveBtn').textContent = "Update Equipment";
+      document.getElementById('itemFormName').value = item.name;
+      document.getElementById('itemFormCat').value = item.category;
+      document.getElementById('itemFormType').value = item.item_type;
+      document.getElementById('itemFormLoc').value = item.location;
+      openModal('itemFormModal');
+    }
+
+    async function saveItemForm() {
+      const name = document.getElementById('itemFormName').value.trim();
+      const cat = document.getElementById('itemFormCat').value.trim();
+      const type = document.getElementById('itemFormType').value;
+      const loc = document.getElementById('itemFormLoc').value;
+
+      if (!name || !cat) { alert("All fields required"); return; }
+
+      if (editingItemId) {
+        const item = inventory.find(i => i.id === editingItemId);
+        item.name = name; item.category = cat; item.item_type = type; item.location = loc;
+        await supabaseClient.from('inventory').update({ name, category: cat, item_type: type, location: loc }).eq('id', editingItemId);
+      } else {
+        const newItem = { name, category: cat, item_type: type, status: "Available", location: loc };
+        const { data, error } = await supabaseClient.from('inventory').insert([newItem]).select();
+        if (!error && data) {
+          inventory.push(data[0]);
+          await addAuditLog(data[0].id, `Added Equipment: ${name}`, 1, "N/A", "N/A", "N/A", loc);
+        }
+      }
+
+      closeModal('itemFormModal');
+      refreshAllUI();
+    }
+
+    async function deleteSelectedItem() {
+      const selected = getSelectedInvIds();
+      if (!selected.length) { alert("Select item to delete."); return; }
+      const item = inventory.find(i => i.id === selected[0]);
+      if (confirm(`Delete equipment '${item.name}'?`)) {
+        await supabaseClient.from('inventory').delete().eq('id', selected[0]);
+        inventory = inventory.filter(i => i.id !== selected[0]);
+        refreshAllUI();
+      }
+    }
+
+    function openSubStorageModalFromSelected() {
+      const selected = getSelectedInvIds();
+      if (!selected.length) { alert("Select a Sub Storage container first."); return; }
+      const item = inventory.find(i => i.id === selected[0]);
+      if (item.item_type !== "Sub Storage") { alert("Selected item is not a Sub Storage container."); return; }
+      currentSubStorageId = item.id;
+      document.getElementById('subStorageModalTitle').textContent = `Sub Storage Container: ${item.name}`;
+      document.getElementById('subStorageModalSub').textContent = `Base Location: ${item.location} | Status: ${item.status}`;
+
+      document.getElementById('subStorageActionBtns').style.display = currentUser.role === 'admin' ? 'flex' : 'none';
+      renderSubStorageContents();
+      openModal('subStorageModal');
+    }
+
+    function renderSubStorageContents() {
+      const body = document.getElementById('subStorageContentsBody');
+      const search = document.getElementById('subMatSearchInput').value.trim().toLowerCase();
+      const mats = kitContents.filter(k => k.kit_id === currentSubStorageId && (!search || k.item_name.toLowerCase().includes(search)));
+
+      body.innerHTML = '';
+      mats.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.onclick = () => {
+          document.querySelectorAll('#subStorageContentsBody tr').forEach(r => r.classList.remove('selected'));
+          tr.classList.add('selected');
+          tr.dataset.matId = m.id;
+        };
+        tr.innerHTML = `<td class="p-3 text-left font-bold text-white">${m.item_name}</td><td class="p-3 text-successGreen font-bold">${m.quantity}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    async function triggerMaterialWithdrawal() {
+      if (currentUser.role !== 'admin') { alert("Admin access required."); return; }
+      const selectedRow = document.querySelector('#subStorageContentsBody tr.selected');
+      if (!selectedRow) { alert("Select material first."); return; }
+      const matId = parseInt(selectedRow.dataset.matId);
+
+      const { data: latestMat, error: fetchErr } = await supabaseClient
+        .from('kit_contents')
+        .select('*')
+        .eq('id', matId)
+        .single();
+
+      if (fetchErr || !latestMat) {
+        alert("Error fetching latest material data. Please refresh.");
+        return;
+      }
+
+      const qtyStr = prompt(`Withdraw quantity for '${latestMat.item_name}' (Available: ${latestMat.quantity}):`, "1");
+      if (!qtyStr) return;
+      const qty = parseInt(qtyStr);
+      if (isNaN(qty) || qty <= 0 || qty > latestMat.quantity) {
+        alert("Invalid quantity limit or stock changed by another user.");
+        return;
+      }
+
+      const well = prompt("Well Name Reference:", "N/A") || "N/A";
+      const newQty = latestMat.quantity - qty;
+
+      const { error: updateErr } = await supabaseClient
+        .from('kit_contents')
+        .update({ quantity: newQty })
+        .eq('id', matId)
+        .eq('quantity', latestMat.quantity);
+
+      if (updateErr) {
+        alert("Conflict detected: Another user modified this item simultaneously. Please try again.");
+        await loadDataFromSupabase();
+        renderSubStorageContents();
+        return;
+      }
+
+      const localMat = kitContents.find(k => k.id === matId);
+      if (localMat) localMat.quantity = newQty;
+
+      const container = inventory.find(i => i.id === currentSubStorageId);
+      await addAuditLog(container.id, `Sub Storage Consumption: ${latestMat.item_name} (-${qty})`, qty, well, "Sub Storage", "N/A", container.location);
+
+      renderSubStorageContents();
+      refreshAllUI();
+      alert("Consumables successfully withdrawn.");
+    }
+
+    async function triggerMaterialRefill() {
+      if (currentUser.role !== 'admin') { alert("Admin access required."); return; }
+      const selectedRow = document.querySelector('#subStorageContentsBody tr.selected');
+      if (!selectedRow) { alert("Select material first."); return; }
+      const matId = parseInt(selectedRow.dataset.matId);
+      const mat = kitContents.find(k => k.id === matId);
+      const qtyStr = prompt(`Refill quantity for '${mat.item_name}':`, "10");
+      if (!qtyStr) return;
+      const qty = parseInt(qtyStr);
+      if (isNaN(qty) || qty <= 0) { alert("Must be greater than 0."); return; }
+
+      mat.quantity += qty;
+      await supabaseClient.from('kit_contents').update({ quantity: mat.quantity }).eq('id', mat.id);
+      const container = inventory.find(i => i.id === currentSubStorageId);
+      await addAuditLog(container.id, `Sub Storage Refill: ${mat.item_name} (+${qty})`, qty, "N/A", "Refill Stock", "N/A", container.location);
+
+      renderSubStorageContents();
+      refreshAllUI();
+      alert(`Refilled ${qty} units successfully!`);
+    }
+
+    function openAddMaterialSubModal() {
+      if (currentUser.role !== 'admin') { alert("Admin access required."); return; }
+      document.getElementById('newMatName').value = '';
+      document.getElementById('newMatQty').value = '1';
+      openModal('addMatModal');
+    }
+
+    async function saveNewMaterialToSubStorage() {
+      const nm = document.getElementById('newMatName').value.trim();
+      const q = parseInt(document.getElementById('newMatQty').value.trim());
+      if (!nm || isNaN(q) || q < 0) { alert("Enter valid data"); return; }
+
+      const newMat = { kit_id: currentSubStorageId, item_name: nm, quantity: q };
+      const { data, error } = await supabaseClient.from('kit_contents').insert([newMat]).select();
+      if (!error && data) {
+        kitContents.push(data[0]);
+        const container = inventory.find(i => i.id === currentSubStorageId);
+        await addAuditLog(container.id, `Added Consumable: ${nm} (+${q})`, q, "N/A", "N/A", "N/A", container.location);
+      }
+
+      closeModal('addMatModal');
+      renderSubStorageContents();
+      refreshAllUI();
+    }
+
+    function renderJobInventoryTable() {
+      const body = document.getElementById('jobInventoryTableBody');
+      const assignedItems = inventory.filter(i => i.status === `Assigned to ${currentUser.username}`);
+      body.innerHTML = '';
+      document.getElementById('jobDateEntry').value = new Date().toISOString().split('T')[0];
+
+      assignedItems.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3"><input type="checkbox" value="${item.id}" class="job-inv-checkbox rounded bg-bgMain border-borderColor"></td>
+          <td class="p-3 text-left font-bold text-white">${item.name}</td>
+          <td class="p-3 text-textMuted">${item.category}</td>
+          <td class="p-3">${item.item_type}</td>
+          <td class="p-3 text-textMuted">${item.location}</td>
+          <td class="p-3 text-warningOrange font-semibold">${item.status}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    async function startJobSession() {
+      const well = document.getElementById('jobWellEntry').value.trim();
+      const service = document.getElementById('jobServiceEntry').value.trim();
+      const jdate = document.getElementById('jobDateEntry').value.trim();
+      const notes = document.getElementById('jobNotesEntry').value.trim();
+
+      if (!well || !service || !jdate) { alert("Please fill Well Name, Service Type, and Job Date."); return; }
+      const selectedIds = Array.from(document.querySelectorAll('.job-inv-checkbox:checked')).map(cb => parseInt(cb.value));
+      if (!selectedIds.length) { alert("Select at least one assigned item."); return; }
+
+      const newJob = { user_id: currentUser.id, well_name: well, service_type: service, job_date: jdate, status: "Active", notes: notes };
+      const { data: jobData, error } = await supabaseClient.from('job_sessions').insert([newJob]).select();
+
+      if (!error && jobData) {
+        const sessionId = jobData[0].id;
+        jobSessions.push(jobData[0]);
+
+        for (const id of selectedIds) {
+          const item = inventory.find(i => i.id === id);
+          const sItem = { session_id: sessionId, inventory_id: id, inventory_name: item.name };
+          const { data: sData } = await supabaseClient.from('session_items').insert([sItem]).select();
+          if (sData) sessionItems.push(sData[0]);
+
+          item.status = `In Field (${well})`;
+          await supabaseClient.from('inventory').update({ status: item.status }).eq('id', id);
+          await addAuditLog(id, `Started Job: ${service} at ${well}`, 1, well, service, jdate, "Field");
+        }
+
+        alert(`Job session for well '${well}' started successfully!`);
+        switchTab('job_management');
+      }
+    }
+
+    function renderActiveJobsCards() {
+      const container = document.getElementById('activeJobsContainer');
+      const activeJobs = jobSessions.filter(j => j.status === 'Active' && j.user_id === currentUser.id);
+
+      container.innerHTML = '';
+      if (!activeJobs.length) {
+        container.innerHTML = `<div class="p-12 text-center text-textMuted text-sm">No Active Jobs currently running.</div>`;
+        return;
+      }
+
+      activeJobs.forEach(job => {
+        const assignedTools = sessionItems.filter(s => s.session_id === job.id).map(s => s.inventory_name).join(', ');
+        const card = document.createElement('div');
+        card.className = "bg-cardBg border border-borderColor rounded-2xl p-5 space-y-3";
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-borderColor/50 pb-3">
+            <div>
+              <span class="text-lg font-bold text-accentBlue">📍 Well: ${job.well_name}</span>
+              <span class="text-xs text-textMuted ml-4">Service: ${job.service_type} | Date: ${job.job_date}</span>
+            </div>
+            <button onclick="openCompleteJobModal(${job.id})" class="bg-successGreen hover:bg-[#047857] text-white font-bold h-9 px-4 rounded-xl text-xs transition">
+              Complete Job &amp; Summary 📄
+            </button>
+          </div>
+          ${job.notes ? `<div class="text-xs text-textMuted italic">Notes: ${job.notes}</div>` : ''}
+          <div class="text-xs font-bold text-white">Assigned Tools: <span class="text-textMuted font-normal">${assignedTools || "None"}</span></div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openCompleteJobModal(jobId) {
+      activeCompletingJobId = jobId;
+      const jobToolIds = sessionItems.filter(s => s.session_id === jobId).map(s => s.inventory_id);
+      const tools = sessionItems.filter(s => s.session_id === jobId).map(s => s.inventory_name).join(', ');
+      document.getElementById('compJobToolsList').textContent = tools || "No tools assigned.";
+
+      const subStoreSelect = document.getElementById('compSubStoreSelect');
+      const subStores = inventory.filter(i => {
+        if (i.item_type !== 'Sub Storage') return false;
+        const isAssignedToCurrentUser = i.status === `Assigned to ${currentUser.username}`;
+        const isInThisJobSession = jobToolIds.includes(i.id);
+        return isAssignedToCurrentUser || isInThisJobSession;
+      });
+
+      subStoreSelect.innerHTML = '';
+      if (!subStores.length) {
+        subStoreSelect.innerHTML = `<option value="">No Assigned Sub Storage Found</option>`;
+      } else {
+        subStores.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = `${s.name} (${s.location}) - [${s.status}]`;
+          subStoreSelect.appendChild(opt);
+        });
+      }
+
+      loadCompSubStoreMaterials();
+      openModal('completeJobModal');
+    }
+
+    function loadCompSubStoreMaterials() {
+      const storeId = parseInt(document.getElementById('compSubStoreSelect').value);
+      const body = document.getElementById('compSubStoreMatBody');
+      body.innerHTML = '';
+      if (!storeId) return;
+
+      const mats = kitContents.filter(k => k.kit_id === storeId);
+      mats.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.onclick = () => {
+          document.querySelectorAll('#compSubStoreMatBody tr').forEach(r => r.classList.remove('selected'));
+          tr.classList.add('selected');
+          tr.dataset.matId = m.id;
+        };
+        tr.innerHTML = `<td class="p-2 text-left font-bold text-white">${m.item_name}</td><td class="p-2 font-bold text-successGreen">${m.quantity}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    async function withdrawMaterialForJob() {
+      const selectedRow = document.querySelector('#compSubStoreMatBody tr.selected');
+      if (!selectedRow) { alert("Select a material."); return; }
+      const matId = parseInt(selectedRow.dataset.matId);
+      const mat = kitContents.find(k => k.id === matId);
+      const qty = parseInt(document.getElementById('compWithdrawQty').value);
+
+      if (isNaN(qty) || qty <= 0 || qty > mat.quantity) { alert("Invalid quantity limit."); return; }
+
+      const job = jobSessions.find(j => j.id === activeCompletingJobId);
+      const storeId = parseInt(document.getElementById('compSubStoreSelect').value);
+      const container = inventory.find(i => i.id === storeId);
+
+      mat.quantity -= qty;
+      await supabaseClient.from('kit_contents').update({ quantity: mat.quantity }).eq('id', mat.id);
+
+      const sCon = { session_id: activeCompletingJobId, kit_id: storeId, material_name: mat.item_name, quantity: qty };
+      const { data } = await supabaseClient.from('session_consumption').insert([sCon]).select();
+      if (data) sessionConsumption.push(data[0]);
+
+      await addAuditLog(storeId, `Job Withdrawal: ${mat.item_name} (-${qty})`, qty, job.well_name, "Job Completion", "N/A", container.location);
+      loadCompSubStoreMaterials();
+      alert(`Withdrawn ${qty} of '${mat.item_name}'.`);
+    }
+
+    async function finalizeJobCompletion(generatePdfFlag) {
+      const job = jobSessions.find(j => j.id === activeCompletingJobId);
+      const itemsAssigned = sessionItems.filter(s => s.session_id === activeCompletingJobId);
+
+      for (const si of itemsAssigned) {
+        const item = inventory.find(i => i.id === si.inventory_id);
+        if (item) {
+          item.status = `Assigned to ${currentUser.username}`;
+          await supabaseClient.from('inventory').update({ status: item.status }).eq('id', item.id);
+        }
+      }
+
+      job.status = 'Completed';
+      await supabaseClient.from('job_sessions').update({ status: 'Completed' }).eq('id', job.id);
+
+      if (generatePdfFlag) {
+        document.getElementById('pdfReportDate').textContent = new Date().toLocaleString();
+        document.getElementById('pdfReportUser').textContent = currentUser.username;
+        document.getElementById('pdfWellName').textContent = job.well_name;
+        document.getElementById('pdfServiceType').textContent = job.service_type;
+        document.getElementById('pdfJobDate').textContent = job.job_date;
+
+        document.getElementById('pdfToolsList').innerHTML = itemsAssigned.map(t => `<li>${t.inventory_name}</li>`).join('') || '<li>None</li>';
+        const consumed = sessionConsumption.filter(sc => sc.session_id === activeCompletingJobId);
+        document.getElementById('pdfMaterialsList').innerHTML = consumed.map(c => `<li>${c.material_name} : ${c.quantity} Units</li>`).join('') || '<li>None</li>';
+
+        closeModal('completeJobModal');
+        openModal('printReportModal');
+      } else {
+        closeModal('completeJobModal');
+        alert(`Job session successfully completed!`);
+        refreshAllUI();
+      }
+    }
+
+    function renderReturnTable() {
+      const body = document.getElementById('returnTableBody');
+      const isAdmin = currentUser.role === 'admin';
+
+      document.getElementById('returnPageTitle').textContent = isAdmin
+        ? "Return & Relocate (Admin Global Return Mode)"
+        : "Return & Relocate Equipment";
+
+      const returnable = inventory.filter(i => {
+        if (isAdmin) return i.status !== 'Available';
+        return i.status === `Assigned to ${currentUser.username}` || i.status.startsWith('In Field');
+      });
+
+      body.innerHTML = '';
+      returnable.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3"><input type="checkbox" value="${item.id}" class="return-checkbox rounded bg-bgMain border-borderColor"></td>
+          <td class="p-3 text-left font-bold text-white">${item.name}</td>
+          <td class="p-3 text-textMuted">${item.category}</td>
+          <td class="p-3">${item.item_type}</td>
+          <td class="p-3 text-textMuted">${item.location}</td>
+          <td class="p-3 font-semibold text-warningOrange">${item.status}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function toggleSelectAllReturn(master) {
+      document.querySelectorAll('.return-checkbox').forEach(cb => cb.checked = master.checked);
+    }
+
+    async function processReturnSelectedItems() {
+      const selectedIds = Array.from(document.querySelectorAll('.return-checkbox:checked')).map(cb => parseInt(cb.value));
+      if (!selectedIds.length) { alert("Select item(s) to return."); return; }
+      const targetWs = document.getElementById('returnWorkshopCombo').value || "Main Base - Hima";
+      if (!confirm(`Return ${selectedIds.length} item(s) to '${targetWs}'?`)) return;
+
+      for (const id of selectedIds) {
+        const item = inventory.find(i => i.id === id);
+        item.status = 'Available';
+        item.location = targetWs;
+        await supabaseClient.from('inventory').update({ status: 'Available', location: targetWs }).eq('id', id);
+        await addAuditLog(id, `Returned Equipment to ${targetWs}`, 1, "N/A", "N/A", "N/A", targetWs);
+      }
+
+      refreshAllUI();
+      alert(`Successfully returned selected item(s)!`);
+    }
+
+    function renderLogsTable() {
+      const body = document.getElementById('logsTableBody');
+      const search = document.getElementById('logsSearchInput').value.trim().toLowerCase();
+
+      body.innerHTML = '';
+      logs.forEach(l => {
+        const rowStr = `${l.timestamp} ${l.username} ${l.action} ${l.well_name} ${l.service_type} ${l.location}`.toLowerCase();
+        if (search && !rowStr.includes(search)) return;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3"><input type="checkbox" value="${l.id}" class="log-checkbox"></td>
+          <td class="p-3">${l.timestamp}</td>
+          <td class="p-3">${l.username}</td>
+          <td class="p-3 text-left text-white font-sans">${l.action}</td>
+          <td class="p-3">${l.quantity}</td>
+          <td class="p-3">${l.well_name}</td>
+          <td class="p-3">${l.service_type}</td>
+          <td class="p-3">${l.location}</td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function toggleSelectAllLogs(master) {
+      document.querySelectorAll('.log-checkbox').forEach(cb => cb.checked = master.checked);
+    }
+
+    async function deleteSelectedLog() {
+      if (currentUser.role !== 'admin') { alert("Admin access required."); return; }
+      const selectedIds = Array.from(document.querySelectorAll('.log-checkbox:checked')).map(cb => parseInt(cb.value));
+      if (!selectedIds.length) { alert("Select log record(s)."); return; }
+
+      if (confirm(`Delete selected log report(s)?`)) {
+        await supabaseClient.from('logs').delete().in('id', selectedIds);
+        logs = logs.filter(l => !selectedIds.includes(l.id));
+        renderLogsTable();
+      }
+    }
+
+    async function clearAllLogs() {
+      if (currentUser.role !== 'admin') { alert("Admin access required."); return; }
+      if (confirm("Delete ALL activity logs?")) {
+        await supabaseClient.from('logs').delete().neq('id', 0);
+        logs = [];
+        renderLogsTable();
+      }
+    }
+
+    function renderUsersTable() {
+      const body = document.getElementById('usersTableBody');
+      body.innerHTML = '';
+      users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.onclick = () => {
+          document.querySelectorAll('#usersTableBody tr').forEach(r => r.classList.remove('selected'));
+          tr.classList.add('selected');
+          tr.dataset.userId = u.id;
+        };
+        tr.innerHTML = `<td class="p-3 text-left font-bold text-white">${u.username}</td><td class="p-3 font-semibold ${u.role === 'admin' ? 'text-successGreen' : 'text-warningOrange'}">${u.role}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    function openAddUserModal() {
+      document.getElementById('newUsername').value = '';
+      document.getElementById('newUserPass').value = '';
+      openModal('addUserModal');
+    }
+
+    async function saveNewUser() {
+      const un = document.getElementById('newUsername').value.trim();
+      const pw = document.getElementById('newUserPass').value.trim();
+      const role = document.getElementById('newUserRole').value;
+
+      if (!un || !pw) { alert("Required fields empty."); return; }
+      if (users.some(u => u.username === un)) { alert("Username exists."); return; }
+
+      const { data, error } = await supabaseClient.from('users').insert([{ username: un, password_hash: pw, role }]).select();
+      if (!error && data) {
+        users.push({ id: data[0].id, username: un, passwordHash: pw, role });
+        closeModal('addUserModal');
+        renderUsersTable();
+        alert(`User created successfully!`);
+      }
+    }
+
+    async function deleteSelectedUser() {
+      const selectedRow = document.querySelector('#usersTableBody tr.selected');
+      if (!selectedRow) { alert("Select a user."); return; }
+      const uid = parseInt(selectedRow.dataset.userId);
+      const user = users.find(u => u.id === uid);
+      if (user.username === 'admin') { alert("Cannot delete main admin."); return; }
+
+      if (confirm(`Delete user '${user.username}'?`)) {
+        await supabaseClient.from('users').delete().eq('id', uid);
+        users = users.filter(u => u.id !== uid);
+        renderUsersTable();
+      }
+    }
+
+    function openManageWorkshopsModal() {
+      if (currentUser.role !== 'admin') { alert("Admin access required."); return; }
+      renderWorkshopsTable();
+      openModal('manageWorkshopsModal');
+    }
+
+    function renderWorkshopsTable() {
+      const body = document.getElementById('workshopsTableBody');
+      body.innerHTML = '';
+      workshops.forEach(w => {
+        const count = inventory.filter(i => i.location === w).length;
+        const tr = document.createElement('tr');
+        tr.onclick = () => {
+          document.querySelectorAll('#workshopsTableBody tr').forEach(r => r.classList.remove('selected'));
+          tr.classList.add('selected');
+          selectedWorkshopRowName = w;
+        };
+        tr.innerHTML = `<td class="p-3 text-left font-bold text-white">${w}</td><td class="p-3">${count}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    async function addWorkshop() {
+      const nm = document.getElementById('newWorkshopInput').value.trim();
+      if (!nm) { alert("Enter name."); return; }
+      if (workshops.includes(nm)) { alert("Exists."); return; }
+
+      const { error } = await supabaseClient.from('workshops').insert([{ name: nm }]);
+      if (!error) {
+        workshops.push(nm);
+        document.getElementById('newWorkshopInput').value = '';
+        populateLocationDropdowns();
+        renderWorkshopsTable();
+      }
+    }
+
+    async function renameSelectedWorkshop() {
+      if (!selectedWorkshopRowName) { alert("Select location."); return; }
+      const oldName = selectedWorkshopRowName;
+      const newName = prompt(`Rename Operational Base '${oldName}':`, oldName);
+      if (!newName || !newName.trim() || newName === oldName) return;
+
+      const idx = workshops.indexOf(oldName);
+      workshops[idx] = newName.trim();
+
+      await supabaseClient.from('workshops').update({ name: newName.trim() }).eq('name', oldName);
+      for (const i of inventory) {
+        if (i.location === oldName) {
+          i.location = newName.trim();
+          await supabaseClient.from('inventory').update({ location: newName.trim() }).eq('id', i.id);
+        }
+      }
+
+      await addAuditLog(null, `Admin Renamed Location: ${oldName} -> ${newName.trim()}`, 1, "N/A", "N/A", "N/A", newName.trim());
+      populateLocationDropdowns();
+      renderWorkshopsTable();
+      refreshAllUI();
+    }
+
+    async function deleteSelectedWorkshop() {
+      if (!selectedWorkshopRowName) { alert("Select location."); return; }
+      const wname = selectedWorkshopRowName;
+      if (confirm(`Delete location '${wname}'?`)) {
+        await supabaseClient.from('workshops').delete().eq('name', wname);
+        workshops = workshops.filter(w => w !== wname);
+        populateLocationDropdowns();
+        renderWorkshopsTable();
+        refreshAllUI();
+      }
+    }
+
+    window.onload = async function() {
+      await loadDataFromSupabase();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "injaz-ios",
+  "version": "1.0.0",
+  "description": "INJAZ Field Equipment & Job Management System for iOS",
+  "private": true,
+  "scripts": {
+    "cap:sync": "npx cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "appId": "com.alhawari.injaz",
+  "appName": "INJAZ",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "capacitor",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "allowsLinkNavigation": false
+  }
+}
